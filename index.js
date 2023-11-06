@@ -32,6 +32,8 @@ async function run() {
     await client.connect();
     const foodCollection = client.db('crave').collection('items')
     const userCollection = client.db('crave').collection('users')
+    const orderFoodCollection = client.db('crave').collection('order')
+    const addFoodCollection = client.db('crave').collection('addFood')
 
 
     // read data
@@ -49,10 +51,34 @@ async function run() {
       res.send(result)
     })
 
-    // user info add
+    // user info 
+    app.get('/users', async(req, res)=>{
+      let qurey ={}
+      if(req.query?.email){
+        qurey = {email: req.query.email}
+      }
+      const cursor = userCollection.find(qurey);
+      const result = await cursor.toArray();
+      res.send(result)
+    })
+
     app.post('/users', async(req, res) =>{
       const newUser = req.body
       const result = await userCollection.insertOne(newUser)
+      res.send(result)
+    })
+
+    // order food
+    app.post('/addFood', async(req,res) =>{
+      const addFood = req.body
+      const result = await orderFoodCollection.insertOne(addFood)
+      res.send(result)
+    })
+
+    // add food
+    app.post('/order', async(req, res) =>{
+      const orderFood = req.body
+      const result = await addFoodCollection.insertOne(orderFood)
       res.send(result)
     })
 
