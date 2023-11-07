@@ -51,16 +51,7 @@ async function run() {
       res.send(result)
     })
 
-    // user info 
-    app.get('/users', async(req, res)=>{
-      let qurey ={}
-      if(req.query?.email){
-        qurey = {email: req.query.email}
-      }
-      const cursor = userCollection.find(qurey);
-      const result = await cursor.toArray();
-      res.send(result)
-    })
+  
 
     app.post('/users', async(req, res) =>{
       const newUser = req.body
@@ -69,14 +60,44 @@ async function run() {
     })
 
     // order food
-    app.post('/addFood', async(req,res) =>{
+    app.post('/order', async(req,res) =>{
       const addFood = req.body
       const result = await orderFoodCollection.insertOne(addFood)
       res.send(result)
     })
 
+    app.get('/order', async(req, res)=>{
+      let qurey ={}
+      if(req.query?.email){
+        qurey = {email: req.query.email}
+      }
+      const cursor = orderFoodCollection.find(qurey);
+      const result = await cursor.toArray();
+      res.send(result)
+    })
+
+    app.get('/orderupdate/:id', async(req,res) =>{
+      const id = req.params.id
+      const query = {_id: new ObjectId(id)}
+      const result = await orderFoodCollection.findOne(query)
+      res.send(result)
+    })
+      
+    app.delete('/order/:id', async(req, res) =>{
+      const id = req.params.id
+      const query = {_id: new ObjectId(id)}
+      const result = await orderFoodCollection.deleteOne(query)
+      res.send(result)
+    })
+
     // add food
-    app.post('/order', async(req, res) =>{
+    app.get('/addFood', async(req,res)=>{
+      const cursor = addFoodCollection.find();
+      const result = await cursor.toArray();
+      res.send(result)
+    })
+
+    app.post('/addFood', async(req, res) =>{
       const orderFood = req.body
       const result = await addFoodCollection.insertOne(orderFood)
       res.send(result)
