@@ -28,7 +28,7 @@ const logger = (req, res, next) =>{
 
 const varifyToken = (req, res, next) =>{
   const token = req?.cookies?.token;
-  console.log('middleware cookies', token);
+  // console.log('middleware cookies', token);
   if(!token){
     return res.status(401).send({message: 'unauthorized access'})
   }
@@ -84,19 +84,19 @@ async function run() {
     // read data
     app.get('/foods',async(req, res) =>{
 
-      // const page = Number(req.query.page)
-      // const limit = Number(req.query.limit)
-      // const skip = (page-1)* limit
+      const page = Number(req.query.page)
+      const limit = Number(req.query.limit)
+      const skip = (page-1)* limit
 
 
-      // const cursor = foodCollection.find().skip(skip).limit(limit);
-      const cursor = foodCollection.find()
+      const cursor = foodCollection.find().skip(skip).limit(limit);
+      // const cursor = foodCollection.find()
       const result = await cursor.toArray();
 
       const total = await foodCollection.countDocuments()
-      res.send({
-        total, result
-      })
+      res.send(
+        {total, result}
+      )
     })
 
     // get data by id
