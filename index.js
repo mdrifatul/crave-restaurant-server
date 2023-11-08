@@ -1,16 +1,46 @@
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require('express')
 const cors = require('cors')
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 require('dotenv').config()
 const app = express();
 const port = 5000 || process.env.PORT
 
 // middleware
 app.use(cors({
-  origin: ['http://localhost:5173'],
+  origin: [
+    'http://localhost:5173',
+  // 'https://crave-67227.web.app',
+  // 'https://crave-67227.firebaseapp.com'
+],
   credentials: true
 }));
 app.use(express.json());
+app.use(cookieParser())
+
+
+// //middlewares for cookies
+const logger = (req, res, next) =>{
+  console.log('log: info', req.method, req.url)
+  next();
+}
+
+const varifyToken = (req, res, next) =>{
+  const token = req?.cookies?.token;
+  console.log('middleware cookies', token);
+  if(!token){
+    return res.status(401).send({message: 'unauthorized access'})
+  }
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded)=>{
+    if(err){
+      return res.status(401).send({message: 'unauthorized decoded'})
+    }
+    req.user = decoded
+    next();
+  });
+  
+}
 
 
 
@@ -29,22 +59,48 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
 
-    await client.connect();
+    // await client.connect();
     const foodCollection = client.db('crave').collection('items')
     const userCollection = client.db('crave').collection('users')
     const orderFoodCollection = client.db('crave').collection('order')
     const addFoodCollection = client.db('crave').collection('addFood')
 
 
+    // auth related api
+    app.post('/jwt',(req, res) =>{
+      const user = req.body
+      // console.log('user for token',user);
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '10h'})
+      res
+      .cookie('token', token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none'
+      })
+      .send({success: true})
+    }) 
+
+
     // read data
-    app.get('/foods', async(req, res) =>{
-      const cursor = foodCollection.find();
+    app.get('/foods',async(req, res) =>{
+
+      // const page = Number(req.query.page)
+      // const limit = Number(req.query.limit)
+      // const skip = (page-1)* limit
+
+
+      // const cursor = foodCollection.find().skip(skip).limit(limit);
+      const cursor = foodCollection.find()
       const result = await cursor.toArray();
-      res.send(result)
+
+      const total = await foodCollection.countDocuments()
+      res.send({
+        total, result
+      })
     })
 
     // get data by id
-    app.get('/foods/:id', async(req, res) =>{
+    app.get('/foods/:id',async(req, res) =>{
       const id = req.params.id
       const query = {_id: new ObjectId(id)}
       const result = await foodCollection.findOne(query)
@@ -60,13 +116,13 @@ async function run() {
     })
 
     // order food
-    app.post('/order', async(req,res) =>{
+    app.post('/order',logger, varifyToken,async(req,res) =>{
       const addFood = req.body
       const result = await orderFoodCollection.insertOne(addFood)
       res.send(result)
     })
 
-    app.get('/order', async(req, res)=>{
+    app.get('/order',logger, varifyToken, async(req, res)=>{
       let qurey ={}
       if(req.query?.email){
         qurey = {email: req.query.email}
@@ -76,10 +132,33 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/orderupdate/:id', async(req,res) =>{
+    app.get('/addfoodUpdate/:id',async(req,res) =>{
       const id = req.params.id
+      // console.log(id);
       const query = {_id: new ObjectId(id)}
-      const result = await orderFoodCollection.findOne(query)
+      const result = await addFoodCollection.findOne(query)
+      console.log({result});
+      res.send(result)
+    })
+
+    app.patch('/updateaddFood/:id',async(req, res) =>{
+      const id = req.params.id
+      const filter = {_id: new ObjectId(id)}
+      const options = { upsert: true };
+      const updateFood = req.body;
+      const food = {
+        $set: {
+          name:updateFood.name,
+          email:updateFood.email,
+          price:updateFood.price, 
+          username:updateFood.username, 
+          quantity:updateFood.quantity, 
+          date:updateFood.date,
+          image:updateFood.image,
+        },
+      }
+      const result = await addFoodCollection.updateOne(filter,food,options)
+      console.log(result);
       res.send(result)
     })
       
