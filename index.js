@@ -88,8 +88,17 @@ async function run() {
       const limit = Number(req.query.limit)
       const skip = (page-1)* limit
 
+      let sortObj = {}
+    
+      const sortField = req.query.sortField
+      const sortOrder = req.query.sortOrder
 
-      const cursor = foodCollection.find().skip(skip).limit(limit);
+      if(sortField && sortOrder){
+        sortObj[sortField] = sortOrder
+      }
+
+
+      const cursor = foodCollection.find().skip(skip).limit(limit).sort(sortObj);
       // const cursor = foodCollection.find()
       const result = await cursor.toArray();
 
