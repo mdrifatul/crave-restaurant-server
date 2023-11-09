@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 require('dotenv').config()
 const app = express();
-const port = 5000 || process.env.PORT
+const port = process.env.PORT || 5000  
 
 // middleware
 app.use(cors({
@@ -18,6 +18,8 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(cookieParser())
+
+
 
 
 // //middlewares for cookies
@@ -118,20 +120,20 @@ async function run() {
 
   
 
-    app.post('/users', async(req, res) =>{
+    app.post('/users',async(req, res) =>{
       const newUser = req.body
       const result = await userCollection.insertOne(newUser)
       res.send(result)
     })
 
     // order food
-    app.post('/order',logger, varifyToken,async(req,res) =>{
+    app.post('/order',async(req,res) =>{
       const addFood = req.body
       const result = await orderFoodCollection.insertOne(addFood)
       res.send(result)
     })
 
-    app.get('/order',logger, varifyToken, async(req, res)=>{
+    app.get('/order',logger, varifyToken,async(req, res)=>{
       let qurey ={}
       if(req.query?.email){
         qurey = {email: req.query.email}
@@ -141,7 +143,7 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/addfoodUpdate/:id',async(req,res) =>{
+    app.get('/addfoodUpdate/:id',logger,varifyToken, async(req,res) =>{
       const id = req.params.id
       // console.log(id);
       const query = {_id: new ObjectId(id)}
@@ -171,7 +173,7 @@ async function run() {
       res.send(result)
     })
       
-    app.delete('/order/:id', async(req, res) =>{
+    app.delete('/order/:id',async(req, res) =>{
       const id = req.params.id
       const query = {_id: new ObjectId(id)}
       const result = await orderFoodCollection.deleteOne(query)
@@ -179,7 +181,7 @@ async function run() {
     })
 
     // add food
-    app.get('/addFood', async(req,res)=>{
+    app.get('/addFood',logger, varifyToken, async(req,res)=>{
       const cursor = addFoodCollection.find();
       const result = await cursor.toArray();
       res.send(result)
