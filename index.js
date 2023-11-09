@@ -10,7 +10,6 @@ const port = process.env.PORT || 5000
 // middleware
 app.use(cors({
   origin: [
-    // 'http://localhost:5173',
   'https://crave-67227.web.app',
   'https://crave-67227.firebaseapp.com'
 ],
@@ -18,8 +17,6 @@ app.use(cors({
 }));
 
 app.use((req, res, next) => {
-  // res.header("Access-Control-Allow-Origin", "http://localhost:5173");
-
   // CORS headers
   res.header("Access-Control-Allow-Origin", "https://crave-67227.web.app"); // restrict it to the required domain
   res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS");
