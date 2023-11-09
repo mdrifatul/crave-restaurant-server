@@ -10,12 +10,29 @@ const port = process.env.PORT || 5000
 // middleware
 app.use(cors({
   origin: [
-    'http://localhost:5173',
-  // 'https://crave-67227.web.app',
-  // 'https://crave-67227.firebaseapp.com'
+    // 'http://localhost:5173',
+  'https://crave-67227.web.app',
+  'https://crave-67227.firebaseapp.com'
 ],
   credentials: true
 }));
+
+app.use((req, res, next) => {
+  // res.header("Access-Control-Allow-Origin", "http://localhost:5173");
+
+  // CORS headers
+  res.header("Access-Control-Allow-Origin", "https://crave-67227.web.app"); // restrict it to the required domain
+  res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS");
+  // Set custom headers for CORS
+  res.header("Access-Control-Allow-Headers", "Content-type,Accept,X-Custom-Header");
+
+  if (req.method === "OPTIONS") {
+      return res.status(200).end();
+  }
+
+  return next();
+})
+
 app.use(express.json());
 app.use(cookieParser())
 
@@ -28,7 +45,7 @@ const logger = (req, res, next) =>{
   next();
 }
 
-const varifyToken = (req, res, next) =>{
+const verifyToken = (req, res, next) =>{
   const token = req?.cookies?.token;
   // console.log('middleware cookies', token);
   if(!token){
@@ -71,15 +88,21 @@ async function run() {
     // auth related api
     app.post('/jwt',(req, res) =>{
       const user = req.body
-      // console.log('user for token',user);
+      console.log('user for token',user);
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '10h'})
-      res
-      .cookie('token', token, {
+      // res
+      // .cookie('token', token, {
+      //   httpOnly: true,
+      //   secure: true,
+      //   sameSite: 'none'
+      // })
+      // .send({success: true})
+      res.cookie('token', token, {
         httpOnly: true,
-        secure: true,
-        sameSite: 'none'
-      })
-      .send({success: true})
+        secure: process.env.NODE_ENV === 'production', 
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+
+      }).send({success: true});
     }) 
 
 
@@ -133,7 +156,7 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/order',logger, varifyToken,async(req, res)=>{
+    app.get('/order',async(req, res)=>{
       let qurey ={}
       if(req.query?.email){
         qurey = {email: req.query.email}
@@ -143,7 +166,7 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/addfoodUpdate/:id',logger,varifyToken, async(req,res) =>{
+    app.get('/addfoodUpdate/:id',async(req,res) =>{
       const id = req.params.id
       // console.log(id);
       const query = {_id: new ObjectId(id)}
@@ -181,8 +204,12 @@ async function run() {
     })
 
     // add food
-    app.get('/addFood',logger, varifyToken, async(req,res)=>{
-      const cursor = addFoodCollection.find();
+    app.get('/addFood',async(req,res)=>{
+      let qurey ={}
+      if(req.query?.email){
+        qurey = {email: req.query.email}
+      }
+      const cursor = addFoodCollection.find(qurey);
       const result = await cursor.toArray();
       res.send(result)
     })
